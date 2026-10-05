@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iframeHunter — Video Extractor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #0a0e14;
+            --bg-elevated: #111820;
+            --card: #151d28;
+            --card-hover: #1a2433;
+            --border: #1e2a3a;
+            --border-active: #00e5a0;
+            --fg: #e8edf3;
+            --fg-muted: #6b7f99;
+            --accent: #00e5a0;
+            --accent-dim: rgba(0, 229, 160, 0.12);
+            --accent-glow: rgba(0, 229, 160, 0.3);
+            --danger: #ff4d6a;
+            --danger-dim: rgba(255, 77, 106, 0.12);
+            --warning: #ffb84d;
+            --warning-dim: rgba(255, 184, 77, 0.12);
+            --info: #4dc8ff;
+            --info-dim: rgba(77, 200, 255, 0.12);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-lg: 16px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: gridShift 20s linear infinite;
+        }
+
+        @keyframes gridShift {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(60px, 60px); }
+        }
+
+        .bg-glow {
+            position: fixed;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .bg-glow-1 {
+            top: -150px;
+            right: -100px;
+            background: var(--accent);
+            animation: glowFloat1 12s ease-in-out infinite;
+        }
+
+        .bg-glow-2 {
+            bottom: -200px;
+            left: -150px;
+            background: #4dc8ff;
+            animation: glowFloat2 15s ease-in-out infinite;
+        }
+
+        @keyframes glowFloat1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-80px, 60px) scale(1.2); }
+        }
+
+        @keyframes glowFloat2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(60px, -80px) scale(0.9); }
+        }
+
+        .app-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px 20px 60px;
+        }
+
+        .app-header {
+            text-align: center;
+            padding: 40px 0 36px;
+        }
+
+        .logo-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin-bottom: 12px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent), #00b8d4);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: var(--bg);
+            box-shadow: 0 0 30px var(--accent-glow);
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { box-shadow: 0 0 20px var(--accent-glow); }
+            50% { box-shadow: 0 0 40px var(--accent-glow), 0 0 60px rgba(0,229,160,0.1); }
+        }
+
+        .logo-text {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--fg) 40%, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .app-subtitle {
+            color: var(--fg-muted);
+            font-size: 15px;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        .app-subtitle span {
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 5px;
+            margin-bottom: 28px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            background: transparent;
+            color: var(--fg-muted);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
+
+        .tab-btn.active {
+            background: var(--accent-dim);
+            color: var(--accent);
+            box-shadow: 0 0 20px rgba(0,229,160,0.08);
+        }
+
+        .tab-btn i { font-size: 15px; }
+
+        .panel { display: none; animation: panelIn 0.4s ease; }
+        .panel.active { display: block; }
+
+        @keyframes panelIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+
+        .card:hover { border-color: rgba(0,229,160,0.15); }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title i { color: var(--accent); font-size: 16px; }
+
+        .card-desc {
+            color: var(--fg-muted);
+            font-size: 13px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .input-group { position: relative; margin-bottom: 16px; }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--fg-muted);
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper > i {
+            position: absolute;
+            left: 16px;
+            color: var(--fg-muted);
+            font-size: 15px;
+            pointer-events: none;
+            transition: color 0.3s;
+        }
+
+        input[type="text"], input[type="url"], textarea {
+            width: 100%;
+            padding: 14px 16px 14px 46px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--fg);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13.5px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        textarea {
+            padding: 14px 16px;
+            min-height: 180px;
+            resize: vertical;
+            line-height: 1.7;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim), 0 0 20px rgba(0,229,160,0.06);
+        }
+
+        input:focus ~ i { color: var(--accent); }
+
+        input::placeholder, textarea::placeholder {
+            color: var(--fg-muted);
+            opacity: 0.5;
+        }
+
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        .btn {
+            padding: 13px 28px;
+            border: none;
+            border-radius: var(--radius);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #00c9a7);
+            color: var(--bg);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px var(--accent-glow);
+        }
+
+        .btn-primary:active { transform: translateY(0); }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-secondary {
+            background: var(--bg-elevated);
+            color: var(--fg-muted);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            color: var(--fg);
+            border-color: var(--fg-muted);
+            background: var(--card-hover);
+        }
+
+        .btn-danger {
+            background: var(--danger-dim);
+            color: var(--danger);
+            border: 1px solid rgba(255,77,106,0.2);
+        }
+
+        .btn-danger:hover { background: rgba(255,77,106,0.2); }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 12.5px;
+            border-radius: var(--radius-sm);
+        }
+
+        select {
+            padding: 10px 14px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--fg);
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        select:focus { border-color: var(--accent); }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2.5px solid transparent;
+            border-top-color: var(--bg);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;
+        }
+
+        .btn-primary.loading .spinner { display: block; }
+        .btn-primary.loading .btn-text { opacity: 0.6; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .status-bar {
+            display: none;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 14px 18px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            margin-bottom: 16px;
+            animation: statusIn 0.3s ease;
+            line-height: 1.5;
+        }
+
+        .status-bar.visible { display: flex; }
+
+        @keyframes statusIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status-bar.info { background: var(--info-dim); color: var(--info); border: 1px solid rgba(77,200,255,0.15); }
+        .status-bar.success { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(0,229,160,0.15); }
+        .status-bar.warning { background: var(--warning-dim); color: var(--warning); border: 1px solid rgba(255,184,77,0.15); }
+        .status-bar.error { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(255,77,106,0.15); }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .results-count { font-size: 14px; font-weight: 500; color: var(--fg-muted); }
+        .results-count strong { color: var(--accent); font-size: 18px; }
+
+        .result-item {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            animation: resultSlide 0.4s ease both;
+        }
+
+        .result-item:hover {
+            border-color: rgba(0,229,160,0.2);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        @keyframes resultSlide {
+            from { opacity: 0; transform: translateX(-16px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .result-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .result-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .badge-iframe { background: var(--accent-dim); color: var(--accent); }
+        .badge-video { background: var(--info-dim); color: var(--info); }
+        .badge-embed { background: var(--warning-dim); color: var(--warning); }
+
+        .result-source {
+            font-size: 12px;
+            color: var(--fg-muted);
+            font-family: 'JetBrains Mono', monospace;
+            opacity: 0.7;
+            word-break: break-all;
+        }
+
+        .result-actions { margin-left: auto; display: flex; gap: 6px; flex-shrink: 0; }
+
+        .icon-btn {
+            width: 34px;
+            height: 34px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--fg-muted);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
+
+        .result-code {
+            padding: 14px 18px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            line-height: 1.7;
+            color: var(--fg);
+            word-break: break-all;
+            white-space: pre-wrap;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .result-code::-webkit-scrollbar { width: 5px; }
+        .result-code::-webkit-scrollbar-track { background: transparent; }
+        .result-code::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        .result-preview {
+            padding: 14px 18px;
+            border-top: 1px solid var(--border);
+            background: rgba(0,0,0,0.2);
+        }
+
+        .result-preview iframe {
+            width: 100%;
+            aspect-ratio: 16/9;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: #000;
+        }
+
+        .preview-toggle {
+            padding: 6px 14px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--fg-muted);
+            font-family: inherit;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .preview-toggle:hover { color: var(--accent); border-color: var(--accent); }
+
+        .preview-content { display: none; margin-top: 12px; }
+        .preview-content.visible { display: block; animation: panelIn 0.3s ease; }
+
+        .empty-state { text-align: center; padding: 50px 20px; color: var(--fg-muted); }
+        .empty-state i { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+        .empty-state p { font-size: 14px; line-height: 1.7; }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--fg-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-top: 4px;
+        }
+
+        .proxy-settings {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .proxy-settings label {
+            font-size: 12px;
+            color: var(--fg-muted);
+            white-space: nowrap;
+        }
+
+        .proxy-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 9px 12px !important;
+            font-size: 12px !important;
+        }
+
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            padding: 12px 20px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 13px;
+            color: var(--fg);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+            min-width: 240px;
+        }
+
+        .toast i { color: var(--accent); }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes toastOut {
+            to { opacity: 0; transform: translateX(40px); }
+        }
+
+        .bookmarklet-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: var(--bg-elevated);
+            border: 1px dashed var(--border);
+            border-radius: var(--radius);
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .bookmarklet-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--accent), #00c9a7);
+            color: var(--bg);
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 13px;
+            text-decoration: none;
+            cursor: grab;
+            white-space: nowrap;
+        }
+
+        .bookmarklet-link:active { cursor: grabbing; }
+
+        .bookmarklet-hint { font-size: 12px; color: var(--fg-muted); line-height: 1.5; }
+
+        .sites-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+
+        .site-tag {
+            padding: 4px 10px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--fg-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Log Console */
+        .log-box {
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: #8b949e;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 12px;
+            line-height: 1.6;
+            display: none;
+        }
+
+        .log-box.visible { display: block; }
+
+        .log-box .log-line { margin-bottom: 2px; }
+        .log-box .log-ok { color: var(--accent); }
+        .log-box .log-err { color: var(--danger); }
+        .log-box .log-warn { color: var(--warning); }
+        .log-box .log-info { color: var(--info); }
+
+        @media (max-width: 640px) {
+            .app-header { padding: 24px 0 20px; }
+            .logo-text { font-size: 24px; }
+            .card { padding: 20px; }
+            .tab-btn { font-size: 12px; padding: 10px 8px; }
+            .tab-btn span.tab-label { display: none; }
+            .result-meta { flex-direction: column; align-items: flex-start; }
+            .result-actions { margin-left: 0; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        ::-webkit-scrollbar { width: 7px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--fg-muted); }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<div class="app-container">
+
+    <header class="app-header">
+        <div class="logo-row">
+            <div class="logo-icon"><i class="fa-solid fa-crosshairs"></i></div>
+            <div class="logo-text">iframeHunter</div>
+        </div>
+        <p class="app-subtitle">Ekstrak <span>iframe video</span> dari halaman web manapun secara otomatis</p>
+    </header>
+
+    <nav class="tab-nav" role="tablist">
+        <button class="tab-btn active" data-tab="url" role="tab" aria-selected="true">
+            <i class="fa-solid fa-link"></i>
+            <span class="tab-label">URL Langsung</span>
+        </button>
+        <button class="tab-btn" data-tab="html" role="tab" aria-selected="false">
+            <i class="fa-solid fa-code"></i>
+            <span class="tab-label">Paste HTML</span>
+        </button>
+        <button class="tab-btn" data-tab="tools" role="tab" aria-selected="false">
+            <i class="fa-solid fa-toolbox"></i>
+            <span class="tab-label">Tools</span>
+        </button>
+    </nav>
+
+    <main>
+        <!-- Panel 1: URL Langsung -->
+        <section class="panel active" id="panel-url" role="tabpanel">
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-globe"></i> Fetch Halaman Web</div>
+                <p class="card-desc">Masukkan URL halaman web, tool akan mengunduh HTML-nya melalui CORS proxy lalu mengekstrak semua iframe video. Jika gagal, gunakan <strong>tab "Paste HTML"</strong> sebagai alternatif yang 100% berhasil.</p>
+
+                <div class="proxy-settings">
+                    <label><i class="fa-solid fa-shield-halved"></i> Proxy:</label>
+                    <select id="proxySelect">
+                        <option value="https://api.allorigins.win/raw?url=">AllOrigins (Default)</option>
+                        <option value="https://corsproxy.io/?url=">CORSProxy.io</option>
+                        <option value="https://api.codetabs.com/v1/proxy?quest=">CodeTabs</option>
+                        <option value="custom">Kustom...</option>
+                    </select>
+                    <input type="text" id="customProxy" class="proxy-input" placeholder="https://your-proxy.com/?url=" style="display:none;">
+                </div>
+
+                <div class="input-group">
+                    <label>URL Halaman Web</label>
+                    <div class="input-wrapper">
+                        <input type="url" id="urlInput" placeholder="https://example.com/watch/video-123" autocomplete="off">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn btn-primary" id="fetchBtn" onclick="fetchAndExtract()">
+                        <div class="spinner"></div>
+                        <span class="btn-text"><i class="fa-solid fa-magnifying-glass"></i> Ekstrak Iframe</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearResults('url')">
+                        <i class="fa-solid fa-rotate-left"></i> Reset
+                    </button>
+                </div>
+
+                <!-- Log Console untuk Debugging -->
+                <div class="log-box" id="logUrl"></div>
+            </div>
+
+            <div id="statusUrl" class="status-bar"></div>
+            <div id="statsUrl" class="stats-row" style="display:none;"></div>
+            <div id="resultsUrl"></div>
+        </section>
+
+        <!-- Panel 2: Paste HTML -->
+        <section class="panel" id="panel-html" role="tabpanel">
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-paste"></i> Paste Kode HTML</div>
+                <p class="card-desc">Jika fetch URL gagal, salin kode sumber halaman (<strong>Ctrl+U</strong> di browser target) lalu tempelkan di sini. Metode ini 100% berhasil karena tidak terkena batasan CORS.</p>
+
+                <div class="input-group">
+                    <label>Kode HTML Halaman</label>
+                    <textarea id="htmlInput" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  <iframe src='https://player.vimeo.com/video/123' ...></iframe>&#10;  <iframe src='https://www.youtube.com/embed/abc' ...></iframe>&#10;</body>&#10;</html>"></textarea>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn btn-primary" onclick="extractFromHTML()">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Analisis HTML
+                    </button>
+                    <button class="btn btn-secondary" onclick="loadSampleHTML()">
+                        <i class="fa-solid fa-flask"></i> Contoh
+                    </button>
+                    <button class="btn btn-danger" onclick="document.getElementById('htmlInput').value=''; clearResults('html')">
+                        <i class="fa-solid fa-trash"></i> Hapus
+                    </button>
+                </div>
+            </div>
+
+            <div id="statusHtml" class="status-bar"></div>
+            <div id="statsHtml" class="stats-row" style="display:none;"></div>
+            <div id="resultsHtml"></div>
+        </section>
+
+        <!-- Panel 3: Tools -->
+        <section class="panel" id="panel-tools" role="tabpanel">
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-bookmark"></i> Bookmarklet Ekstraktor</div>
+                <p class="card-desc">Drag tombol hijau ini ke bookmark bar browser kamu. Lalu buka halaman web manapun dan klik bookmarklet tersebut untuk langsung mengekstrak semua iframe video.</p>
+                <div class="bookmarklet-box">
+                    <a class="bookmarklet-link" id="bookmarkletLink" href="#">
+                        <i class="fa-solid fa-crosshairs"></i> Extract iFrames
+                    </a>
+                    <div class="bookmarklet-hint">
+                        <strong>Drag ke bookmark bar</strong><br>
+                        Atau klik kanan > "Add to Bookmarks/Favorites"
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-screwdriver-wrench"></i> Generator Iframe Embed</div>
+                <p class="card-desc">Buat kode embed iframe video dengan pengaturan yang bisa disesuaikan.</p>
+
+                <div class="input-group">
+                    <label>URL Video / Embed URL</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="genUrl" placeholder="https://www.youtube.com/embed/dQw4w9WgXcQ">
+                        <i class="fa-solid fa-video"></i>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>Lebar</label>
+                        <input type="text" id="genWidth" value="100%" style="padding-left:12px;">
+                    </div>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>Tinggi</label>
+                        <input type="text" id="genHeight" value="500" style="padding-left:12px;">
+                    </div>
+                    <div class="input-group" style="margin-bottom:0;">
+                        <label>Border Radius</label>
+                        <input type="text" id="genRadius" value="12" style="padding-left:12px;">
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:16px; margin-bottom: 16px; flex-wrap:wrap;">
+                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--fg-muted); cursor:pointer;">
+                        <input type="checkbox" id="genAllowFull" checked> Allow Fullscreen
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--fg-muted); cursor:pointer;">
+                        <input type="checkbox" id="genLazy" checked> Lazy Load
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--fg-muted); cursor:pointer;">
+                        <input type="checkbox" id="genResponsive"> Responsive (16:9)
+                    </label>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn btn-primary" onclick="generateIframe()">
+                        <i class="fa-solid fa-code"></i> Generate Kode
+                    </button>
+                    <button class="btn btn-secondary" onclick="copyGenerated()">
+                        <i class="fa-solid fa-copy"></i> Salin
+                    </button>
+                </div>
+
+                <div id="genOutput" style="display:none; margin-top: 16px;">
+                    <label style="font-size:12px; color:var(--fg-muted); margin-bottom:8px; display:block;">KODE HASIL:</label>
+                    <pre style="background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px; font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.7; color:var(--fg); overflow-x:auto; white-space:pre-wrap; word-break:break-all;" id="genCode"></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><i class="fa-solid fa-list-check"></i> Platform yang Didukung</div>
+                <p class="card-desc">Regex detector kami mengenali pola URL dari platform video populer berikut:</p>
+                <div class="sites-grid" id="sitesGrid"></div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ============================================
+// Daftar platform video yang didukung
+// ============================================
+const VIDEO_PLATFORMS = [
+    { name: 'YouTube', patterns: ['youtube.com/embed/', 'youtube-nocookie.com/embed/', 'youtu.be/'] },
+    { name: 'Vimeo', patterns: ['player.vimeo.com/video/', 'vimeo.com/'] },
+    { name: 'Dailymotion', patterns: ['dailymotion.com/embed/video/', 'dai.ly/'] },
+    { name: 'Facebook Video', patterns: ['facebook.com/plugins/video.php', 'facebook.com/watch/embed/'] },
+    { name: 'Instagram', patterns: ['instagram.com/p/', 'instagram.com/reel/', 'instagram.com/tv/'] },
+    { name: 'TikTok', patterns: ['tiktok.com/embed/', 'tiktok.com/@'] },
+    { name: 'Twitter/X', patterns: ['twitter.com/i/status/', 'x.com/i/status/', 'twitframe.com/'] },
+    { name: 'Twitch', patterns: ['twitch.tv/embed/', 'player.twitch.tv/'] },
+    { name: 'Bilibili', patterns: ['bilibili.com/player/', 'player.bilibili.com/'] },
+    { name: 'NicoNico', patterns: ['nicovideo.jp/embed/', 'nicovideo.jp/watch/'] },
+    { name: 'Streamable', patterns: ['streamable.com/e/', 'streamable.com/s/'] },
+    { name: 'Wistia', patterns: ['wistia.com/embed/', 'wistia.net/embed/'] },
+    { name: 'Vidyard', patterns: ['vidyard.com/embed/', 'play.vidyard.com/'] },
+    { name: 'Loom', patterns: ['loom.com/embed/', 'useloom.com/embed/'] },
+    { name: 'Rumble', patterns: ['rumble.com/embed/', 'rumble.com/'] },
+    { name: 'Bitchute', patterns: ['bitchute.com/embed/', 'bitchute.com/video/'] },
+    { name: 'Odysee', patterns: ['odysee.com/$/embed/', 'odysee.com/@'] },
+    { name: 'PeerTube', patterns: ['/videos/embed/', 'peertube.tv/'] },
+    { name: 'Ok.ru', patterns: ['ok.ru/videoembed/', 'odnoklassniki.ru/videoembed/'] },
+    { name: 'VK Video', patterns: ['vk.com/video_ext.php'] },
+    { name: 'SoundCloud', patterns: ['w.soundcloud.com/player/', 'soundcloud.com/player/'] },
+    { name: 'Spotify', patterns: ['open.spotify.com/embed/', 'embed.spotify.com/'] },
+    { name: 'Bandcamp', patterns: ['bandcamp.com/EmbeddedPlayer/'] },
+    { name: 'Mixcloud', patterns: ['mixcloud.com/widget/iframe/'] },
+    { name: 'Apple Podcasts', patterns: ['podcasts.apple.com/embed/'] },
+    { name: 'Google Drive', patterns: ['drive.google.com/file/d/', 'docs.google.com/presentation/d/'] },
+    { name: 'OneDrive', patterns: ['onedrive.live.com/embed', '1drv.ms/'] },
+    { name: 'SlideShare', patterns: ['slideshare.net/slideshow/embed/'] },
+    { name: 'Prezi', patterns: ['prezi.com/embed/'] },
+    { name: 'Kaltura', patterns: ['kaltura.com/', 'cdnapisec.kaltura.com/'] },
+    { name: 'JW Player', patterns: ['jwplayer.com/players/', 'content.jwplatform.com/'] },
+    { name: 'Cloudflare Stream', patterns: ['cloudflarestream.com/', 'iframe.cloudflarestream.com/'] },
+    { name: 'Mux', patterns: ['mux.com/embed/', 'mux.com/'] },
+    { name: 'Brightcove', patterns: ['players.brightcove.net/', 'bcove.video/'] },
+    { name: 'Gdrive Player', patterns: ['gdriveplayer.to/', 'gdriveplayer.us/'] },
+    { name: 'Fembed', patterns: ['fembed.com/v/', 'fembed'] },
+    { name: 'YourUpload', patterns: ['yourupload.com/embed/', 'yourupload.com/watch/'] },
+    { name: 'StreamSB', patterns: ['streamsbb.com/', 'streamsb.net/', 'sbplay.org/'] },
+    { name: 'Google Docs PDF', patterns: ['docs.google.com/gview?embedded=1'] },
+    { name: 'CodePen', patterns: ['codepen.io/*/embed/'] },
+    { name: 'JSFiddle', patterns: ['jsfiddle.net/*/embedded/'] },
+    { name: 'CodeSandbox', patterns: ['codesandbox.io/embed/'] },
+];
+
+// Render daftar platform
+(function renderSites() {
+    const grid = document.getElementById('sitesGrid');
+    VIDEO_PLATFORMS.forEach(p => {
+        const tag = document.createElement('span');
+        tag.className = 'site-tag';
+        tag.textContent = p.name;
+        grid.appendChild(tag);
+    });
+})();
+
+// Bookmarklet
+(function setupBookmarklet() {
+    const code = `javascript:void(function(){var d=document,ifs=d.querySelectorAll('iframe'),results=[];ifs.forEach(function(f){results.push(f.outerHTML);});if(!results.length){alert('Tidak ada iframe ditemukan.');return;}var w=window.open('','_blank','width=800,height=600');w.document.write('<html><head><title>iframeHunter</title><style>body{font-family:monospace;background:%23111;color:%23eee;padding:20px}pre{background:%23000;padding:12px;border-radius:8px;margin:8px 0;overflow-x:auto}h2{color:%2300e5a0}</style></head><body><h2>'+results.length+' iframe ditemukan</h2>');results.forEach(function(r,i){w.document.write('<h3>%23'+(i+1)+'</h3><pre>'+r.replace(/</g,'&lt;')+'</pre>');});w.document.write('</body></html>');w.document.close();})();`;
+    document.getElementById('bookmarkletLink').href = code;
+})();
+
+// Tab Switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-selected', 'false');
+        });
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+        document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    });
+});
+
+// Proxy select toggle
+document.getElementById('proxySelect').addEventListener('change', function() {
+    document.getElementById('customProxy').style.display = this.value === 'custom' ? 'block' : 'none';
+});
+
+// ============================================
+// SISTEM LOG (Untuk debugging jika fetch gagal)
+// ============================================
+function initLog(target) {
+    const el = document.getElementById('log' + capitalize(target));
+    el.innerHTML = '';
+    el.classList.add('visible');
+    return el;
+}
+
+function addLog(logEl, msg, type) {
+    const cls = type === 'ok' ? 'log-ok' : type === 'err' ? 'log-err' : type === 'warn' ? 'log-warn' : 'log-info';
+    const time = new Date().toLocaleTimeString('id-ID');
+    logEl.innerHTML += `<div class="log-line ${cls}">[${time}] ${msg}</div>`;
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+// ============================================
+// FUNGSI UTAMA: Fetch URL + Ekstrak
+// ============================================
+async function fetchAndExtract() {
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url) {
+        showStatus('url', 'warning', 'Masukkan URL terlebih dahulu.');
+        return;
+    }
+
+    if (!url.match(/^https?:\/\//i)) {
+        showStatus('url', 'warning', 'URL harus diawali dengan http:// atau https://');
+        return;
+    }
+
+    const btn = document.getElementById('fetchBtn');
+    btn.classList.add('loading');
+    btn.disabled = true;
+    clearResults('url');
+    
+    const logEl = initLog('url');
+    showStatus('url', 'info', 'Memulai proses ekstraksi...');
+
+    addLog(logEl, `Target URL: ${url}`, 'info');
+
+    const proxySelect = document.getElementById('proxySelect');
+    let proxyUrl = proxySelect.value;
+    if (proxyUrl === 'custom') {
+        proxyUrl = document.getElementById('customProxy').value.trim();
+        if (!proxyUrl) {
+            addLog(logEl, 'Proxy kustom belum diisi!', 'err');
+            showStatus('url', 'error', 'Proxy kustom belum diisi.');
+            btn.classList.remove('loading');
+            btn.disabled = false;
+            return;
+        }
+    }
+
+    const proxyName = proxySelect.options[proxySelect.selectedIndex].text;
+    addLog(logEl, `Menggunakan proxy: ${proxyName}`, 'info');
+    showStatus('url', 'info', `Menghubungi ${proxyName}...`);
+
+    const fullUrl = proxyUrl + encodeURIComponent(url);
+    addLog(logEl, `Fetch URL: ${fullUrl.substring(0, 80)}...`, 'info');
+
+    try {
+        // TIMEOUT 15 detik agar tidak hang forever
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        addLog(logEl, 'Mengirim request...', 'info');
+        const response = await fetch(fullUrl, {
+            headers: { 'Accept': 'text/html, application/xhtml+xml, */*' },
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        addLog(logEl, `Response diterima. Status: ${response.status} ${response.statusText}`, response.ok ? 'ok' : 'warn');
+
+        if (!response.ok) {
+            throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+        }
+
+        const html = await response.text();
+        addLog(logEl, `HTML berhasil diunduh. Ukuran: ${html.length.toLocaleString()} karakter`, 'ok');
+
+        if (html.length < 50) {
+            throw new Error('Konten terlalu kecil (kemungkinan halaman diblokir atau proxy mengembalikan error halaman).');
+        }
+
+        // Cek apakah ini halaman error dari proxy
+        if (html.includes('<title>Error</title>') || html.includes('<title>Blocked</title>') || (html.includes('403 Forbidden') && html.length < 500)) {
+            throw new Error('Proxy mengembalikan halaman error/blocked. Coba ganti proxy lain di dropdown.');
+        }
+
+        showStatus('url', 'success', `Berhasil mengunduh ${html.length.toLocaleString()} karakter. Menganalisis...`);
+        addLog(logEl, 'Memulai analisis DOM dan Regex...', 'info');
+
+        await new Promise(r => setTimeout(r, 200));
+        processHTML(html, 'url', logEl);
+
+    } catch (err) {
+        console.error(err);
+        let msg = err.message;
+        
+        addLog(logEl, `ERROR: ${msg}`, 'err');
+
+        if (err.name === 'AbortError') {
+            msg = 'Request timeout (15 detik). Proxy mungkin sedang down atau terlalu lambat. Coba ganti proxy lain, atau gunakan tab "Paste HTML".';
+        } else if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('TypeError') || msg.includes('Load failed')) {
+            msg = `Gagal terhubung ke ${proxyName}. Kemungkinan proxy sedang down atau diblokir oleh jaringan kamu. Saran: Ganti proxy di dropdown, atau gunakan tab "Paste HTML" (cara paling reliable).`;
+        }
+
+        showStatus('url', 'error', msg);
+    } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+    }
+}
+
+// ============================================
+// Extract dari paste HTML
+// ============================================
+function extractFromHTML() {
+    const html = document.getElementById('htmlInput').value.trim();
+    if (!html) {
+        showStatus('html', 'warning', 'Tempelkan kode HTML terlebih dahulu.');
+        return;
+    }
+    showStatus('html', 'info', 'Menganalisis kode HTML...');
+    clearResults('html');
+    setTimeout(() => processHTML(html, 'html', null), 200);
+}
+
+// ============================================
+// Contoh HTML
+// ============================================
+function loadSampleHTML() {
+    document.getElementById('htmlInput').value = `<!DOCTYPE html>
+<html>
+<head><title>Contoh Halaman Streaming</title></head>
+<body>
+    <h1>Film Terbaru 2024</h1>
+    <div class="video-player">
+        <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
+                width="100%" height="500" 
+                frameborder="0" 
+                allowfullscreen
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+        </iframe>
+    </div>
+    <div class="alt-player">
+        <iframe src="https://player.vimeo.com/video/824804225" 
+                width="100%" height="450" 
+                frameborder="0" 
+                allow="autoplay; fullscreen; picture-in-picture" 
+                allowfullscreen></iframe>
+    </div>
+    <p>Server alternatif:</p>
+    <iframe src="https://www.dailymotion.com/embed/video/x8g8y0k" 
+            width="560" height="315" 
+            allowfullscreen></iframe>
+    <iframe src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/123456" 
+            width="100%" height="166" 
+            frameborder="0" 
+            allow="autoplay"></iframe>
+    <iframe src="https://open.spotify.com/embed/album/4aawyAB9vmqN3uQ7FjRGTy" 
+            width="300" height="380" 
+            frameborder="0" 
+            allowtransparency="true" 
+            allow="encrypted-media"></iframe>
+    <iframe src="https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWxYz/preview" 
+            width="640" height="480" 
+            allow="autoplay"></iframe>
+    <div class="related">
+        <iframe data-src="https://www.twitch.tv/embed/test-channel/chat" width="350" height="500"></iframe>
+    </div>
+</body>
+</html>`;
+    showToast('Contoh HTML dimuat, silakan klik "Analisis HTML"');
+}
+
+// ============================================
+// INTI: Proses HTML & Ekstrak iframe
+// ============================================
+function processHTML(html, target, logEl) {
+    const results = [];
+
+    // --- Metode 1: Parser DOM ---
+    try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const iframes = doc.querySelectorAll('iframe');
+
+        if (logEl) addLog(logEl, `DOM Parser: menemukan ${iframes.length} tag <iframe>`, iframes.length > 0 ? 'ok' : 'warn');
+
+        iframes.forEach((iframe, idx) => {
+            const src = iframe.getAttribute('src') || iframe.getAttribute('data-src') || '';
+            if (!src) return;
+
+            const platform = detectPlatform(src);
+            const outerHTML = iframe.outerHTML
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+            results.push({
+                type: 'iframe',
+                src: src,
+                platform: platform,
+                code: outerHTML,
+                rawHTML: iframe.outerHTML,
+                index: idx
+            });
+        });
+    } catch (e) {
+        if (logEl) addLog(logEl, `DOM Parser error: ${e.message}`, 'err');
+    }
+
+    // --- Metode 2: Regex untuk pola yang mungkin tidak terparse ---
+    const regexPatterns = [
+        { re: /<iframe[^>]*\ssrc\s*=\s*["']([^"']+)["'][^>]*>/gi, type: 'iframe' },
+        { re: /<iframe[^>]*\sdata-src\s*=\s*["']([^"']+)["'][^>]*>/gi, type: 'iframe' },
+        { re: /<embed[^>]*\ssrc\s*=\s*["']([^"']*?(?:youtube|vimeo|dailymotion|player|video|embed|stream)[^"']*)["'][^>]*>/gi, type: 'embed' },
+        { re: /<object[^>]*\sdata\s*=\s*["']([^"']*?(?:youtube|vimeo|dailymotion|player|video|embed)[^"']*)["'][^>]*>/gi, type: 'embed' },
+        { re: /<video[^>]*\ssrc\s*=\s*["'](https?:\/\/[^"']+)["'][^>]*>/gi, type: 'video' },
+        { re: /["'](https?:\/\/[^"']*(?:\.mp4|\.m3u8|\.webm|\.flv))["']/gi, type: 'video' },
+        { re: /"embedUrl"\s*:\s*"([^"]+)"/gi, type: 'iframe' },
+        { re: /"contentUrl"\s*:\s*"(https?:\/\/[^"]*(?:\.mp4|\.m3u8)[^"]*)"/gi, type: 'video' },
+        { re: /["'](https?:\/\/[^"']*(?:fembed|streamsb|gdriveplayer|yourupload|streamsbb)[^"']*)["']/gi, type: 'embed' },
+    ];
+
+    let regexCount = 0;
+    regexPatterns.forEach(({ re, type }) => {
+        let match;
+        while ((match = re.exec(html)) !== null) {
+            const url = match[1];
+            if (!url || url.length < 10) continue;
+
+            const alreadyExists = results.some(r => r.src === url);
+            if (alreadyExists) continue;
+
+            const platform = detectPlatform(url);
+            results.push({
+                type: type,
+                src: url,
+                platform: platform,
+                code: url,
+                rawHTML: url,
+                index: results.length
+            });
+            regexCount++;
+        }
+    });
+
+    if (logEl) addLog(logEl, `Regex Scanner: menemukan ${regexCount} URL tambahan`, regexCount > 0 ? 'ok' : 'warn');
+
+    // --- Deduplikasi ---
+    const seen = new Set();
+    const uniqueResults = results.filter(r => {
+        if (seen.has(r.src)) return false;
+        seen.add(r.src);
+        return true;
+    });
+
+    if (logEl) addLog(logEl, `Total unik setelah dedup: ${uniqueResults.length} item`, uniqueResults.length > 0 ? 'ok' : 'err');
+
+    // --- Render hasil ---
+    if (uniqueResults.length === 0) {
+        showStatus(target, 'warning', 'Tidak ditemukan iframe video dalam halaman ini. Kemungkinan: (1) halaman memuat video via JavaScript setelah load, (2) URL yang dimasukkan bukan halaman yang berisi video, atau (3) coba gunakan tab "Paste HTML" dengan Ctrl+U di browser target.');
+        return;
+    }
+
+    // Hitung statistik
+    const iframeCount = uniqueResults.filter(r => r.type === 'iframe').length;
+    const videoCount = uniqueResults.filter(r => r.type === 'video').length;
+    const embedCount = uniqueResults.filter(r => r.type === 'embed').length;
+    const platformSet = new Set(uniqueResults.map(r => r.platform || 'Lainnya'));
+
+    showStatus(target, 'success', `Berhasil menemukan ${uniqueResults.length} iframe/embed video!`);
+
+    if (logEl) addLog(logEl, `--- SUKSES: ${uniqueResults.length} hasil siap ditampilkan ---`, 'ok');
+
+    // Render stats
+    const statsEl = document.getElementById('stats' + capitalize(target));
+    statsEl.style.display = 'grid';
+    statsEl.innerHTML = `
+        <div class="stat-card"><div class="stat-value">${uniqueResults.length}</div><div class="stat-label">Total Ditemukan</div></div>
+        <div class="stat-card"><div class="stat-value">${iframeCount}</div><div class="stat-label">iFrame</div></div>
+        <div class="stat-card"><div class="stat-value">${videoCount}</div><div class="stat-label">Direct Video</div></div>
+        <div class="stat-card"><div class="stat-value">${platformSet.size}</div><div class="stat-label">Platform</div></div>
+    `;
+
+    // Render result items
+    const container = document.getElementById('results' + capitalize(target));
+    let h = `<div class="results-header">
+        <div class="results-count"><strong>${uniqueResults.length}</strong> hasil ditemukan</div>
+        <div class="btn-row">
+            <button class="btn btn-sm btn-primary" onclick="copyAllResults('${target}')"><i class="fa-solid fa-copy"></i> Salin Semua</button>
+            <button class="btn btn-sm btn-secondary" onclick="downloadResults('${target}')"><i class="fa-solid fa-download"></i> Download TXT</button>
+        </div>
+    </div>`;
+
+    uniqueResults.forEach((r, i) => {
+        const badgeClass = r.type === 'iframe' ? 'badge-iframe' : (r.type === 'video' ? 'badge-video' : 'badge-embed');
+        const typeLabel = r.type === 'iframe' ? 'IFRAME' : (r.type === 'video' ? 'VIDEO' : 'EMBED');
+        const platformLabel = r.platform ? `<span style="color:var(--accent);font-weight:500;">${r.platform}</span> · ` : '';
+
+        h += `<div class="result-item" style="animation-delay: ${i * 0.08}s">
+            <div class="result-meta">
+                <span class="result-badge ${badgeClass}">${typeLabel}</span>
+                ${platformLabel}
+                <span class="result-source">${truncate(r.src, 70)}</span>
+                <div class="result-actions">
+                    <button class="icon-btn" title="Salin kode" onclick="copySingle(${i}, '${target}')"><i class="fa-solid fa-copy"></i></button>
+                    <button class="icon-btn" title="Buka URL" onclick="window.open('${escapeAttr(r.src)}', '_blank')"><i class="fa-solid fa-external-link-alt"></i></button>
+                    ${r.type === 'iframe' ? `<button class="icon-btn" title="Preview" onclick="togglePreview(${i}, '${target}')"><i class="fa-solid fa-eye"></i></button>` : ''}
+                </div>
+            </div>
+            <div class="result-code" id="code-${target}-${i}">${escapeHTML(r.code)}</div>
+            ${r.type === 'iframe' ? `
+            <div class="result-preview">
+                <button class="preview-toggle" onclick="togglePreview(${i}, '${target}')">
+                    <i class="fa-solid fa-play"></i> Preview Video
+                </button>
+                <div class="preview-content" id="preview-${target}-${i}"></div>
+            </div>` : ''}
+        </div>`;
+    });
+
+    container.innerHTML = h;
+    window['_results_' + target] = uniqueResults;
+}
+
+// ============================================
+// Deteksi platform
+// ============================================
+function detectPlatform(url) {
+    const lower = url.toLowerCase();
+    for (const platform of VIDEO_PLATFORMS) {
+        for (const pattern of platform.patterns) {
+            if (lower.includes(pattern.toLowerCase())) {
+                return platform.name;
+            }
+        }
+    }
+    return null;
+}
+
+// ============================================
+// Toggle Preview
+// ============================================
+function togglePreview(index, target) {
+    const el = document.getElementById(`preview-${target}-${index}`);
+    if (!el) return;
+
+    if (el.classList.contains('visible')) {
+        el.classList.remove('visible');
+        el.innerHTML = '';
+        return;
+    }
+
+    const results = window['_results_' + target];
+    if (!results || !results[index]) return;
+
+    let src = results[index].src;
+
+    // Auto-convert watch URL ke embed URL
+    if (src.includes('youtube.com/watch')) {
+        try {
+            const vid = new URL(src).searchParams.get('v');
+            if (vid) src = `https://www.youtube.com/embed/${vid}`;
+        } catch(e) {}
+    } else if (src.includes('youtu.be/')) {
+        const vid = src.split('youtu.be/')[1].split('?')[0];
+        if (vid) src = `https://www.youtube.com/embed/${vid}`;
+    } else if (src.includes('vimeo.com/') && !src.includes('player.vimeo.com')) {
+        const vid = src.split('vimeo.com/')[1].split('?')[0];
+        if (vid && vid.match(/^\d+$/)) src = `https://player.vimeo.com/video/${vid}`;
+    } else if (src.includes('dailymotion.com/video/') && !src.includes('embed')) {
+        const vid = src.split('dailymotion.com/video/')[1].split('_')[0];
+        if (vid) src = `https://www.dailymotion.com/embed/video/${vid}`;
+    }
+
+    el.innerHTML = `<iframe src="${escapeAttr(src)}" allowfullscreen allow="autoplay; encrypted-media"></iframe>`;
+    el.classList.add('visible');
+}
+
+// ============================================
+// Copy Functions
+// ============================================
+function copySingle(index, target) {
+    const results = window['_results_' + target];
+    if (!results || !results[index]) return;
+    const text = results[index].rawHTML || results[index].code;
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('Kode berhasil disalin ke clipboard');
+    }).catch(() => fallbackCopy(text));
+}
+
+function copyAllResults(target) {
+    const results = window['_results_' + target];
+    if (!results || results.length === 0) return;
+    const text = results.map((r, i) =>
+        `=== [${i + 1}] ${r.type.toUpperCase()}${r.platform ? ' — ' + r.platform : ''} ===\n${r.rawHTML || r.code}`
+    ).join('\n\n');
+    navigator.clipboard.writeText(text).then(() => {
+        showToast(`${results.length} hasil berhasil disalin`);
+    }).catch(() => fallbackCopy(text));
+}
+
+function copyGenerated() {
+    const code = document.getElementById('genCode').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+        showToast('Kode embed berhasil disalin');
+    }).catch(() => fallbackCopy(code));
+}
+
+function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;left:-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand('copy');
+        showToast('Berhasil disalin');
+    } catch (e) {
+        showToast('Gagal menyalin, coba manual');
+    }
+    document.body.removeChild(ta);
+}
+
+// ============================================
+// Download TXT
+// ============================================
+function downloadResults(target) {
+    const results = window['_results_' + target];
+    if (!results || results.length === 0) return;
+    const text = `iframeHunter — Hasil Ekstraksi\n${'='.repeat(50)}\nTanggal: ${new Date().toLocaleString('id-ID')}\nTotal: ${results.length} iframe/embed ditemukan\n${'='.repeat(50)}\n\n` +
+        results.map((r, i) =>
+            `[${i + 1}] ${r.type.toUpperCase()}${r.platform ? ' — ' + r.platform : ''}\nSource: ${r.src}\n\n${r.rawHTML || r.code}\n${'-'.repeat(40)}`
+        ).join('\n\n');
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `iframehunter-results-${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('File TXT berhasil didownload');
+}
+
+// ============================================
+// Generator Iframe
+// ============================================
+function generateIframe() {
+    const url = document.getElementById('genUrl').value.trim();
+    if (!url) { showToast('Masukkan URL video terlebih dahulu'); return; }
+
+    const width = document.getElementById('genWidth').value || '100%';
+    const height = document.getElementById('genHeight').value || '500';
+    const radius = document.getElementById('genRadius').value || '0';
+    const allowFull = document.getElementById('genAllowFull').checked;
+    const lazy = document.getElementById('genLazy').checked;
+    const responsive = document.getElementById('genResponsive').checked;
+
+    let code = '';
+    if (responsive) {
+        code = `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:${radius}px;">
+  <iframe
+    src="${escapeAttr(url)}"
+    style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:${radius}px;"
+    ${allowFull ? 'allowfullscreen' : ''}
+    ${lazy ? 'loading="lazy"' : ''}
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  ></iframe>
+</div>`;
+    } else {
+        code = `<iframe
+  src="${escapeAttr(url)}"
+  width="${width}"
+  height="${height}"
+  frameborder="0"
+  style="border:none;border-radius:${radius}px;"
+  ${allowFull ? 'allowfullscreen' : ''}
+  ${lazy ? 'loading="lazy"' : ''}
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+></iframe>`;
+    }
+
+    document.getElementById('genCode').textContent = code;
+    document.getElementById('genOutput').style.display = 'block';
+}
+
+// ============================================
+// Utilitas
+// ============================================
+function showStatus(target, type, message) {
+    const el = document.getElementById('status' + capitalize(target));
+    el.className = `status-bar visible ${type}`;
+    const icons = { info: 'fa-circle-info', success: 'fa-circle-check', warning: 'fa-triangle-exclamation', error: 'fa-circle-xmark' };
+    el.innerHTML = `<i class="fa-solid ${icons[type]}" style="flex-shrink:0; margin-top:2px;"></i> <span>${message}</span>`;
+}
+
+function clearResults(target) {
+    if (!target || target === 'url') {
+        document.getElementById('resultsUrl').innerHTML = '';
+        document.getElementById('statsUrl').style.display = 'none';
+        document.getElementById('statusUrl').className = 'status-bar';
+        document.getElementById('logUrl').classList.remove('visible');
+        delete window['_results_url'];
+    }
+    if (!target || target === 'html') {
+        document.getElementById('resultsHtml').innerHTML = '';
+        document.getElementById('statsHtml').style.display = 'none';
+        document.getElementById('statusHtml').className = 'status-bar';
+        delete window['_results_html'];
+    }
+}
+
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function escapeHTML(str) { return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function escapeAttr(str) { return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function truncate(str, len) { return str.length <= len ? str : str.substring(0, len) + '...'; }
+
+function showToast(message) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `<i class="fa-solid fa-check-circle"></i> ${message}`;
+    container.appendChild(toast);
+    setTimeout(() => { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 3200);
+}
+
+// Enter pada input URL
+document.getElementById('urlInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') fetchAndExtract();
+});
+
+// ============================================
+// Partikel background
+// ============================================
+(function initParticles() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    
+    const canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.4;';
+    document.body.prepend(canvas);
+    const ctx = canvas.getContext('2d');
+    let w, h;
+    const particles = [];
+
+    function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+    window.addEventListener('resize', resize);
+    resize();
+
+    for (let i = 0; i < 30; i++) {
+        particles.push({
+            x: Math.random() * w, y: Math.random() * h,
+            vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+            r: Math.random() * 1.5 + 0.5, a: Math.random() * 0.5 + 0.1,
+        });
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, w, h);
+        particles.forEach(p => {
+            p.x += p.vx; p.y += p.vy;
+            if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+            if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, Math.max(0.1, p.r), 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(0, 229, 160, ${p.a})`;
+            ctx.fill();
+        });
+        for (let i = 0; i < particles.length; i++) {
+            for (let j = i + 1; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 150) {
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = `rgba(0, 229, 160, ${0.08 * (1 - dist / 150)})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(draw);
+    }
+    draw();
+})();
+</script>
+</body>
+</html>
